@@ -1,0 +1,18 @@
+%dw 2.0
+
+type auto_7e90cb48_8745_43b0_be99_7d18a7d82a17_Input_Payload = Array<Array<Document>>
+type Document = {|
+  "_id"?: {|  |}, 
+  productTitle?: String, 
+  brandName?: String, 
+  seriesName?: String, 
+  price?: Number, 
+  ram?: String, 
+  rom?: String, 
+  warranty?: String, 
+  quantity?: Number, 
+  location?: String
+|} {"typeId": "Document"}
+
+
+

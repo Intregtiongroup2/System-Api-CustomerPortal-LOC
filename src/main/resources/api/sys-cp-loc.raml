@@ -1,0 +1,74 @@
+#%RAML 1.0
+title: sys-cp-loc
+
+version: v1.0.0
+
+protocols:
+  - HTTPS
+
+mediaType: 
+- application/json
+
+traits:
+  errorResponses: !include traits/errorResponses.raml
+  basicAuth: !include traits/client-id-enforcement.raml
+uses:
+  resourceTypeLib: library/resourceTypeLib.raml
+  queryParamtraitsLib: library/queryParamTraits.raml
+  dataTypesLib: library/dataTypesLibrary.raml
+
+description: System API for interacting with local DataBase(MongoDB)
+
+/customers/{location} :
+  is: [basicAuth]
+  uriParameters:
+    location:
+      enum: [Kolkata,Mumbai,Hyderabad,Bangalore]
+  get:
+    description: Fetch details of the specific/all customers
+    is: [queryParamtraitsLib.customerquaryparam,errorResponses ] 
+  post:
+    description: Add details of new customer
+    is: [errorResponses]
+
+  put:
+    description: Update customer details like PhoneNumber, Address, Pincode
+    is: [queryParamtraitsLib.customerputquaryparam,errorResponses]
+
+  type:
+    resourceTypeLib.custom-resource-type:
+      getResponseType: dataTypesLib.customerDataType
+      getResponseExample: !include examples/customerDetailsExample.raml
+      postRequestType: dataTypesLib.customerDataType
+      postrequestExample: !include examples/customerPostRequestExample.raml
+      postResponseExample: !include examples/customerPostResponseExample.raml
+      putRequestType: dataTypesLib.customerPutdataType
+      putRequestExample: !include examples/customerPutRequestExample.raml
+      putResponseExample: !include examples/customerPutResponseExample.raml
+
+      
+/products/{location} :
+  is: [basicAuth]
+  uriParameters:
+    location:
+      enum: [Kolkata,Mumbai,Hyderabad,Bangalore]
+  get:
+    description: fetch the details of product
+    is: [queryParamtraitsLib.productquaryparam ,errorResponses]  
+  put:
+    is: [queryParamtraitsLib.productputquaryparams ,errorResponses]
+  type:
+    resourceTypeLib.custom-resource-type:
+      getResponseType: dataTypesLib.productDataType
+      getResponseExample: !include examples/mobileResponseExample.raml
+      putRequestType: dataTypesLib.productPutDataType
+      putRequestExample: !include examples/productPutExample.raml
+      putResponseExample: !include examples/putResponseExample.raml
+/ping:
+  description: To check the status of Api 
+  get:
+  type:
+    resourceTypeLib.custom-resource-type:
+      getResponseType: dataTypesLib.healthCheckDataType
+      getResponseExample: !include examples/healthCheckExample.raml
+

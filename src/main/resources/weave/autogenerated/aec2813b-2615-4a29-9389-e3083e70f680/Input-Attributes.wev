@@ -1,0 +1,23 @@
+%dw 2.0
+
+type auto_aec2813b_2615_4a29_9389_e3083e70f680_Input_Attributes = {|
+  clientCertificate?: {|
+    publicKey?: {|  |}, 
+    "type"?: String, 
+    encoded?: Binary
+  |}, 
+  headers: {|  |}, 
+  listenerPath: String, 
+  method: String, 
+  queryParams: {| productTitle: String |}, 
+  queryString: String, 
+  relativePath: String, 
+  remoteAddress: String, 
+  requestPath: String, 
+  requestUri: String, 
+  scheme: String, 
+  uriParams: {| location: "mumbai" | "bangalore" | "kolkata" | "hyderabad" |}, 
+  version: String, 
+  localAddress: String
+|}
+

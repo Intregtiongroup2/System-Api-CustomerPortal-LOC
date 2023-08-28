@@ -1,0 +1,38 @@
+#%RAML 1.0 Library
+traits:
+  customerquaryparam:
+    queryParameters:
+      customerId:
+        required: false
+        type: string
+        minLength: 7
+
+  customerputquaryparam:
+    queryParameters:
+      customerId:
+        required: true
+        type: string
+        minLength: 7
+        
+
+  productquaryparam:
+    queryParameters:
+      productTitle:
+        required: true
+        type: string
+
+  productputquaryparams:
+    queryParameters:
+      productTitle:
+        required: true
+        type: string
+
+  ordergetquaryparams:
+    queryParameters:
+      emailId:
+        required: true
+        type: string
+        minLength: 7
+      productTitle:
+        required: true
+        type: string

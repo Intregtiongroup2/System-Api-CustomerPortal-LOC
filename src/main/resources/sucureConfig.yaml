@@ -1,0 +1,16 @@
+db:
+  Hyderabad: "![twQiQ4R2ae3o2e3TMIbxDx95BbwAap5J9LwmNPHZuKeo7t/4o79chQMr0k9Ae9zlalOdCVnQqcJO5YmdpOAGzAYL3DEbrnMPJPqcxfTLBo8iu2YhOq3QXcEO0aaJ0GnJ]"
+  Mumbai: "![hw7zeaAzGvnPMPhwVCwLJvnely4yiGVtXAvcqo+gEOc4M/8xuuWCjjb7x248CFa82ql/driootsxKUeylAXOz36UTWKW2kESd+tfa0E3FRU=]"
+  Kolkata: "![rxHb6PhsvWNFpWqxLDFpO10J4YzxrzyyO7QK6Bw4mN3LUnL0tm0aKDKG3Hvs6k0fKVQUi5MKYj6NwvGoOtjYq9xCB8x1vb6AZa2XRMjrHWs=]"
+  Bangalore: "![gy+32HwhG8wWqS5wzwJAFQ7ZhgLSgXpDc0D0fmEedq5itfhz5jua9jx9bJhIcjs59IuE+1J/u1evsF+5lDx1ipB4VTqKqVoZqJfjUNW0ro8=]"
+
+tls:
+  keypass: "![R7DQi5/Q++mi4OwMtT+NPA==]"
+  password: "![R7DQi5/Q++mi4OwMtT+NPA==]"
+  
+  
+pgp:
+  file: "![q+r3aj70ddV7il/mmTVjPg==]"
+  keyId: "![3yj/O4MPcy1rZaZQ3p4qAw==]"
+  fingerPrint: "![aS6dXRL6n1JkZvMzSpk2qIlcoVqi3q1ZCqb1gcyn8kE=]"
+  

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto"
+		xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd">
+	<http:listener-config
+		name="sys-cp-loc-httpListenerConfig">
+		<http:listener-connection host="0.0.0.0"
+			port="${https.port}" protocol="HTTPS" readTimeout="${https.readTimeout}">
+			<tls:context>
+				<tls:key-store type="${tls.keyStoreType}" path="${tls.keyPath}"
+					alias="${tls.alias}" keyPassword="${secure::tls.keypass}"
+					password="${secure::tls.password}" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<apikit:config name="sys-cp-loc-config"
+		api="sys-cp-loc.raml" outboundHeadersMapName="outboundHeaders"
+		httpStatusVarName="httpStatus" />
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="2aef110f-8895-4fe7-a764-5f6a3772c39a" file="config.yaml" />
+	<mongo:config name="Bangalore_MongoDB_Config"
+		doc:name="MongoDB Config"
+		doc:id="8ea7bd44-efa4-4d56-b936-217639b70353">
+		<mongo:connection-string-connection
+			connectionString="${secure::db.Bangalore}" />
+	</mongo:config>
+	<mongo:config name="Kolkata_MongoDB_Config"
+		doc:name="MongoDB Config"
+		doc:id="dc37ce60-4bdc-4b69-a45a-774f1043f588">
+		<mongo:connection-string-connection
+			connectionString="${secure::db.Kolkata}" />
+	</mongo:config>
+	<mongo:config name="Hyderabad_MongoDB_Config"
+		doc:name="MongoDB Config"
+		doc:id="7ce45985-c4a1-4858-aba9-4923817df5db">
+		<mongo:connection-string-connection
+			connectionString="${secure::db.Hyderabad}" />
+	</mongo:config>
+	<mongo:config name="Mumbai_MongoDB_Config"
+		doc:name="MongoDB Config"
+		doc:id="fe430d5f-d6d6-4eb2-bc5f-fbe9df6f3680">
+		<mongo:connection-string-connection
+			connectionString="${secure::db.Mumbai}" />
+	</mongo:config>
+	<configuration doc:name="Configuration"
+		doc:id="9e4521c3-e696-453b-98d0-6bdffa42013f"
+		defaultErrorHandler-ref="globalError_Handler" />
+	<api-gateway:autodiscovery
+		apiId="${autodiscovery.id}" ignoreBasePath="true"
+		doc:name="API Autodiscovery"
+		doc:id="6f4557f5-6bfb-4489-9b4e-27b3d89e5a7b"
+		flowRef="sys-cp-loc-main" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="4be12700-6f7d-45ef-ba62-8c73b23a3623" file="sucureConfig.yaml" key="${secure.decryptkey}" />
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="8a7917a6-4aa9-422f-8071-bb493666d3f5" />
+	<crypto:pgp-config name="Crypto_Pgp_Encrypt" doc:name="Crypto Pgp" doc:id="b5c48b6c-798a-4a28-8e41-c4469ad4f1c3" publicKeyring="${secure::pgp.file}" >
+		<crypto:pgp-key-infos >
+			<crypto:pgp-asymmetric-key-info keyId="${secure::pgp.keyId}" fingerprint="${secure::pgp.fingerPrint}"/>
+		</crypto:pgp-key-infos>
+	</crypto:pgp-config>
+</mule>

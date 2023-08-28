@@ -1,0 +1,8 @@
+%dw 2.0
+
+type auto_8f2d8016_78d0_42dd_83f5_6a08a2046d96_Input_Payload = {|
+  matched?: Number, 
+  modified?: Number, 
+  upsertedId?: Any
+|}
+

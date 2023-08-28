@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd">
+	
+	<flow name="POST:customer_location" doc:id="35a12e0e-9d6a-44c2-a5ff-1f1e743a06e3" >
+		<logger level="INFO" doc:name="emailId" doc:id="6e54394c-2e9f-490f-88ca-7c881e23aeb1" message='#["adding details of customer with email = " ++ (payload.emailId default "")]'/>
+		<choice doc:name="checking cardDetails Present or not?" doc:id="7629ca94-c621-4328-882f-4f7e7c55aebe" >
+			<when expression="#[!isEmpty(payload.cardDetails)== true]">
+				<crypto:pgp-encrypt doc:name="Pgp encrypt CardNumber" doc:id="6236a4f7-fbd0-4cb8-a41c-ff5771ff33aa" target="cardNumber" config-ref="Crypto_Pgp_Encrypt" keyId="pub123">
+			<crypto:content><![CDATA[#[payload.cardDetails.cardNumber]]]></crypto:content>
+		</crypto:pgp-encrypt>
+				<ee:transform doc:name="Transform Message" doc:id="fb649052-9237-4928-9fa8-797aa4f65851" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "emailId": payload.emailId,
+  "firstName": payload.firstName,
+  "lastName": payload.lastName,
+  "gender": payload.gender,
+  "pincode": payload.pincode,
+  "address": payload.address,
+  "phoneNumber": payload.phoneNumber,
+  "location": payload.location,
+  "cardDetails": {
+    "bankName": payload.cardDetails.bankName,
+    "cardNumber": vars.cardNumber
+  }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="54a84fb9-53d0-4af4-b43d-1cce0b1853c5" message="No Encryption Required"/>
+			</otherwise>
+		</choice>
+		<choice doc:name="location router" doc:id="113c8e80-d654-4942-b9cf-0e660c1afedd" >
+			<when expression="#[attributes.uriParams.'location' == 'Kolkata']" >
+				<flow-ref doc:name="Kolkata flow" doc:id="fb4e876c-9a54-43af-9911-9490bd2d3014" name="Kolkata_Customers_POST" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Bangalore']" >
+				<flow-ref doc:name="Bangalore flow" doc:id="bccc394f-15a3-4e0b-b514-2520e9f7c89c" name="Bangalore_Customers_POST" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Mumbai']" >
+				<flow-ref doc:name="Mumbai flow" doc:id="243b5468-23ca-4a4b-8d82-c4823e0c026e" name="Mumbai_Customers_POST" />
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Hyderabad flow" doc:id="1049b731-668b-4c7e-a290-9ec6e04b8a7f" name="Hyderabad_Customers_POST" />
+			</otherwise>
+		</choice>
+				<logger level="INFO" doc:name="Success" doc:id="d27b9239-44fe-4133-8c3a-e072b37ab21b" message='#["Successfully added details of customer with email = " ++ (payload.customerDetails.emailId[0] default "")]' />
+		
+	</flow>
+	<sub-flow name="Hyderabad_Customers_POST" doc:id="4dd41392-ffd4-46f9-8886-1eb8db32532f" >
+		<ee:transform doc:name="Transform Message" doc:id="d8f987c4-7d4f-463d-b9ba-6c73f6e56f78" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	emailId: payload.emailId,
+	firstName: payload.firstName,
+	lastName: payload.lastName,
+	gender: payload.gender,
+	address: payload.address,
+	pincode: payload.pincode,
+	phoneNumber: payload.phoneNumber,
+	location: payload.location,
+	(cardDetails: {
+		"1": payload.cardDetails
+	})if(!isEmpty(payload.cardDetails)),
+	(cardDetails: {
+	})if(isEmpty(payload.cardDetails))
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="1ea541b9-616e-439d-b25e-7a7533361372" >
+			<mongo:insert-document collectionName="Customers" doc:name="add customerDetails" doc:id="b7c4f786-6499-4b67-b1df-b8dd53528706" config-ref="Hyderabad_MongoDB_Config">
+				</mongo:insert-document>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="35b1e48a-7b3d-4f8f-a8b6-bac4e927dde7" >
+					<ee:transform doc:name="Transform Message" doc:id="84b2f83e-36ca-46f5-8719-7726b062746a" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "emailId already exist"
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="d4f36e52-da0f-408f-bea6-c5a5b2f0b4f9" millisBetweenRetries="2000">
+			<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents" doc:id="2b9ae3bc-ac24-45f0-b3fa-7f09c569f205" config-ref="Hyderabad_MongoDB_Config">
+				<mongo:query><![CDATA[#[{
+	"emailId": payload.emailId
+}]]]></mongo:query>
+			</mongo:find-documents>
+			<validation:is-not-null doc:name="Is not null" doc:id="5b70dc0d-b0ab-4523-8e08-c8f7f172f7ce" config-ref="Validation_Config" value="#[payload.CustomerId]" />
+		</until-successful>
+		<ee:transform doc:name="success message" doc:id="00607ce2-00d9-4718-b020-9118913fc72a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "customerDetails": payload,
+  message: "Details Successfully Added in the Local Database"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="Mumbai_Customers_POST" doc:id="c6a7f3f4-ceab-4988-839c-c582652265fa" >
+		<ee:transform doc:name="Transform Message" doc:id="85401753-de1e-440c-bd92-995f04970854" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    emailId: payload.emailId,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    gender: payload.gender,
+    address: payload.address,
+    pincode: payload.pincode,
+    phoneNumber: payload.phoneNumber,
+    location: payload.location,
+    (cardDetails:{
+    	"1":payload.cardDetails
+    })if(!isEmpty(payload.cardDetails)),
+    (cardDetails:{
+    })if(isEmpty(payload.cardDetails))
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="27038eb7-de7a-41b2-bc3a-b40b556d61ad" >
+			<mongo:insert-document collectionName="Customers" doc:name="add customerDetails" doc:id="b01cf4e9-d37f-464b-9b34-57997ab097b2" config-ref="Mumbai_MongoDB_Config" />
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ced7f11b-cebc-4c06-859a-4738c8bec99d" >
+					<ee:transform doc:name="Transform Message" doc:id="28920a57-7f77-4b80-afd8-6da55ae05040" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "emailId already exist"
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="f592dfc2-c438-45a5-bbe4-ea448e1270ec" millisBetweenRetries="2000">
+			<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents" doc:id="ce505248-ebd3-4650-9053-e73a3178a55a" config-ref="Mumbai_MongoDB_Config">
+				<mongo:query><![CDATA[#[{
+	"emailId": payload.emailId
+}]]]></mongo:query>
+			</mongo:find-documents>
+			<validation:is-not-null doc:name="Is not null" doc:id="875b309e-03b3-40f5-bd4e-65b8a4726080" config-ref="Validation_Config" value="#[payload.CustomerId]" />
+		</until-successful>
+		<ee:transform doc:name="success message" doc:id="d8d1ed13-ac6c-4e89-957d-4bc43da882ea" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+		"customerDetails": payload,
+  message: "Details Successfully Added in the Local Database"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="Bangalore_Customers_POST" doc:id="33d060d1-9be1-440c-ae3a-1536a74bc1c6" >
+		<ee:transform doc:name="Transform Message" doc:id="ec5e1f54-688e-4d67-a6b7-7e7eedad9b00" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    emailId: payload.emailId,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    gender: payload.gender,
+    address: payload.address,
+    pincode: payload.pincode,
+    phoneNumber: payload.phoneNumber,
+    location: payload.location,
+    (cardDetails:{
+    	"1":payload.cardDetails
+    })if(!isEmpty(payload.cardDetails)),
+    (cardDetails:{
+    })if(isEmpty(payload.cardDetails))
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="f3589025-35bb-4cff-8311-34726da8ab4b" >
+			<mongo:insert-document collectionName="Customers" doc:name="add customerDetails" doc:id="32fb3726-bad1-4bf4-bb30-29c2aa1f1ee8" config-ref="Bangalore_MongoDB_Config" />
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2771c9a0-a4bd-4a5c-bafe-393fbb434314" >
+					<ee:transform doc:name="Transform Message" doc:id="df2a375c-2e67-4496-8d50-1950d5093a20" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "emailId already exist"
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="f6c8c615-4908-4964-bd99-0c5df68d52d9" millisBetweenRetries="2000">
+			<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents" doc:id="37b6bdd3-3d41-4476-ab7f-a31532d03dad" config-ref="Bangalore_MongoDB_Config">
+				<mongo:query><![CDATA[#[{
+	"emailId": payload.emailId
+}]]]></mongo:query>
+			</mongo:find-documents>
+			<validation:is-not-null doc:name="Is not null" doc:id="410a65a3-7afb-4cd6-8856-f14b645f02b6" config-ref="Validation_Config" value="#[payload.CustomerId]" />
+		</until-successful>
+		<ee:transform doc:name="success message" doc:id="d7bcc097-ba55-4473-831f-a898237d0e30" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "customerDetails": payload,
+  message: "Details Successfully Added in the Local Database"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="Kolkata_Customers_POST" doc:id="35ff3c19-4c5e-48bc-9061-af7091ec1d9f" >
+		<ee:transform doc:name="Transform Message" doc:id="12f47e1f-8cae-4db7-ab8c-617ea31700a7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    emailId: payload.emailId,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    gender: payload.gender,
+    address: payload.address,
+    pincode: payload.pincode,
+    phoneNumber: payload.phoneNumber,
+    location: payload.location,
+    (cardDetails:{
+    	"1":payload.cardDetails
+    })if(!isEmpty(payload.cardDetails)),
+    (cardDetails:{
+    })if(isEmpty(payload.cardDetails))
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="d01f93e1-90c2-430c-bd8c-5fb888446f48" >
+			<mongo:insert-document collectionName="Customers" doc:name="add customerDetails" doc:id="fc6451e2-69d9-4f9d-ab44-ce53a89d2c19" config-ref="Kolkata_MongoDB_Config" />
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="31ae8da4-ec44-418c-8088-fa7e3353942c" >
+					<ee:transform doc:name="Transform Message" doc:id="86a1e861-1131-48c0-a259-d7747267bf0a" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "emailId already exist"
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="3fefbf49-fa02-4340-80c5-8611f28ffc97" millisBetweenRetries="2000">
+			<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents" doc:id="ed2e52b5-3029-4f32-b328-5e1cb0e35d87" config-ref="Kolkata_MongoDB_Config">
+				<mongo:query><![CDATA[#[{
+	"emailId": payload.emailId
+}]]]></mongo:query>
+			</mongo:find-documents>
+			<validation:is-not-null doc:name="Is not null" doc:id="071cdda2-d0d5-4e0d-ab16-20d812ba049c" config-ref="Validation_Config" value="#[payload.CustomerId]"/>
+		</until-successful>
+		<ee:transform doc:name="success message" doc:id="7e616fed-1cc0-4907-99af-c624f4a6fff5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"customerDetails": payload,
+  message: "Details Successfully Added in the Local Database"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>

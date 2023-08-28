@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_aec2813b_2615_4a29_9389_e3083e70f680_Output_Payload = Array<{  productTitle: String,   rom: String,   brandName: String,   quantity: Number,   seriesName: String,   price: Number,   warranty: String,   location: "Kolkata" | "Mumbai" | "Hyderabad" | "Bangalore",   ram: String,   _?: Any}>
+

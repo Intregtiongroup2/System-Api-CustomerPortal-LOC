@@ -1,0 +1,163 @@
+#%RAML 1.0 Library
+types:
+
+  customerDataType:
+    type: object
+    properties:
+      customerId:
+        type: string
+        required: false
+        minLength: 7
+      emailId:
+        type: string
+        required: true
+        minLength: 7
+      firstName:
+        type: string
+        required: true
+        minLength: 3
+      lastName:
+        type: string
+        required: true
+        minLength: 3
+      gender:
+        type: string
+        required: true
+      pincode:
+        type: string
+        required: true     
+      address:
+        type: string
+        required: true
+      phoneNumber:
+        type: string
+        required: true
+      location:
+        required: true
+        enum: [Kolkata, Bangalore, Hyderabad,Mumbai]
+      savedCards:
+        type: object
+        required: false
+      cartDeatils:
+        type: object
+        required: false  
+
+  customerPutdataType:
+    type: object
+    properties:
+      address:
+        type: string
+        required: false
+      pincode:
+        type: string
+        required: false 
+      phoneNumber:
+        type: string
+        required: false
+      cardDetails:
+        type: object
+        required: false
+
+  orderDataType:
+    type: object
+    properties:
+      productTitle:
+        type: string
+        required: true
+      emailId:
+        type: string
+        required: true
+        maxLength: 45
+      dateOfPurchase:
+        type: string
+        required: true
+      status:
+        type: string
+        required: true
+      feedback:
+        type: string
+        required: false
+      complaint:
+        type: string
+        required: false
+      location:
+        required: true
+        enum: [Kolkata, Bangalore, Hyderabad,Mumbai] 
+  orderPutDataType:
+    type: object
+    properties:
+      feedback:
+        type: string
+        required: false
+      complaint:
+        type: string
+        required: false  
+      status:
+        type: string
+        required: false 
+  productDataType:
+    type: object
+    properties:
+      productTitle:
+        required: true
+        type: string 
+      brandName:
+        required: true
+        type: string
+      seriesName:
+        required: true
+        type: string
+      price:
+        required: true
+        type: number
+      ram:
+        required: true
+        type: string
+      rom:
+        required: true
+        type: string
+      warranty:
+        required: true
+        type: string
+      quantity:
+        required: true
+        type: number
+      location:
+        required: true
+        enum: [Kolkata, Bangalore, Hyderabad,Mumbai]    
+  productPutDataType:
+    type: object
+    properties:
+      quantity:
+        type: number
+        required: true
+      price:
+        type: number
+        required: false
+  healthCheckDataType:
+    type: object
+    properties:
+      apiName:
+        type: string
+        required: false
+      apiVersion:
+        type: string
+        required: false
+      server:
+        type: string
+        required: true
+      env:
+        type: string
+        required: true
+      status:
+        type: string
+        required: true
+      message:
+        type: string
+        required: true
+      details:
+        type: object
+        properties:
+          stat:
+            type: string
+            required: true

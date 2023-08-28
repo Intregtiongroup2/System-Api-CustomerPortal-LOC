@@ -1,0 +1,30 @@
+#%RAML 1.0 Library
+resourceTypes:
+  custom-resource-type:
+    get?:
+      responses:
+        200:
+          body:
+            application/json:
+              type: <<getResponseType>>
+              example: <<getResponseExample>>
+    post?:
+      body:
+        application/json:
+          type: <<postRequestType>>
+          example: <<postrequestExample>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: <<postResponseExample>>
+    put?:
+      body:
+        application/json:
+          type: <<putRequestType>>
+          example: <<putRequestExample>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: <<putResponseExample>>

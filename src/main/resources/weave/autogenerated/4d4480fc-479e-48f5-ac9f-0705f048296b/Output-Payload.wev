@@ -1,0 +1,17 @@
+%dw 2.0
+
+type auto_4d4480fc_479e_48f5_ac9f_0705f048296b_Output_Payload = Array<Array<Document>>
+type Document = {|
+  "_id"?: {|  |}, 
+  emailId?: String, 
+  firstName?: String, 
+  lastName?: String, 
+  gender?: String, 
+  pincode?: String, 
+  address?: String, 
+  phoneNumber?: String, 
+  location?: String
+|} {"typeId": "Document"}
+
+
+

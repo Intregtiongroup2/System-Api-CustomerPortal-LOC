@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd">
+	<flow name="PUT:customer_location" doc:id="9cc12962-5ef7-447c-ae5a-2c70f70b77ab" >
+		<logger level="INFO" doc:name="CustomerId" doc:id="6844b449-a624-4fb0-aaaf-632ea5b72e5b" message='#["adding details of customerId = " ++ (attributes.queryParams.customerId default "")]' />
+		<set-variable value="#[attributes.queryParams.customerId]" doc:name="Set Variable" doc:id="d66216cd-ef6a-4caf-8d0b-6cc41e7cb927" variableName="externalId"/>
+		<choice doc:name="Choice" doc:id="a1893379-3e97-4215-b842-8ff9e3585022" >
+			<when expression="#[!isEmpty(payload.cardDetails)==true]">
+				<flow-ref doc:name="Flow Reference" doc:id="d01e30a1-958d-46a1-88b3-57449e119a4f" name="GET:customer_location" target="customerDetails" />
+				<crypto:pgp-encrypt doc:name="Pgp encrypt CartNumber" doc:id="76a1267a-e14f-4577-8e28-56a66bdacc08" config-ref="Crypto_Pgp_Encrypt" keyId="pub123" target="cardNumber">
+					<crypto:content><![CDATA[#[payload.cardDetails.cardNumber]]]></crypto:content>
+				</crypto:pgp-encrypt>
+				<ee:transform doc:name="Transform Message" doc:id="82dc7529-3f1f-4617-97c7-54002016d338">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var idx = sizeOf(vars.customerDetails.savedCards) as Number
+---
+{
+	"address": payload.address,
+	"pincode": payload.pincode,
+	"phoneNumber": payload.phoneNumber,
+	"cardDetails": (vars.customerDetails.savedCards default {
+	}) ++ {
+		(idx + 1): 
+    	{
+			bankName: payload.cardDetails.bankName,
+			cardNumber: vars.cardNumber
+		}
+	}
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="2972f97c-56ea-4cab-9756-e144fb684be6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<choice doc:name="location router" doc:id="65bea2e4-d9b2-4860-9bcf-c3f85655d790" >
+			<when expression="#[attributes.uriParams.'location' == 'Bangalore']" >
+				<flow-ref doc:name="Bangalore flow" doc:id="ab3b5b73-1c5f-4118-aae4-53850aba047f" name="Bangalore_Customers_PUT" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Mumbai']" >
+				<flow-ref doc:name="Mumbai flow" doc:id="e8bc8c8a-1549-4f73-bbf5-d9456cd6e1fd" name="Mumbai_Customers_PUT" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Hyderabad']" >
+				<flow-ref doc:name="Hyderabad flow" doc:id="ca72263b-8e92-4397-a78d-e3a54b5f413b" name="Hyderabad_Customers_PUT" />
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Kolkata flow" doc:id="575b32cb-e321-446d-a9a3-5302520bd8b7" name="Kolkata_Customers_PUT" />
+			</otherwise>
+		</choice>
+				<logger level="INFO" doc:name="Success" doc:id="e77325aa-aba2-41ff-9b3e-08dfea62cec7" message='#["Successfully modified details of customerId = " ++ (vars.externalId default "")]' />
+		
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="a12a5679-f1ff-4671-9a38-045686c3e44e" type="MONGO:NO_MODIFICATION" >
+				<ee:transform doc:name="error message" doc:id="3ef05763-7944-476d-b5ea-679826c3ea5e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"errorDescription": error.description,
+	"type": error.errorType.identifier
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<sub-flow name="Kolkata_Customers_PUT" doc:id="c9b90d13-b90b-49b5-91f6-956b9ca86797" >
+		<mongo:update-documents doc:name="Update customer details" doc:id="09e44ed2-8251-48e2-9851-47b566cb7ae5" config-ref="Kolkata_MongoDB_Config" collectionName="Customers">
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="get response" doc:id="497bcd50-db53-4454-803c-0ad6d92175c0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Show modification status" doc:id="11ffa86e-cad1-4945-bfd0-23178bb7dd2f" name="PUT_Response"/>
+	</sub-flow>
+	<sub-flow name="Bangalore_Customers_PUT" doc:id="cfab56c6-f684-427e-a6d0-9ad23d59fa79" >
+		<mongo:update-documents collectionName="Customers" doc:name="Update customer details" doc:id="4e249484-fc50-4b00-afc3-188662bde150" config-ref="Bangalore_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="get response" doc:id="db18c4d2-12c6-4771-aeac-376307a6a00d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Show modification status" doc:id="cb73038e-7ab4-44ee-b4a9-a8d1e557f1a6" name="PUT_Response" />
+	</sub-flow>
+	<sub-flow name="Mumbai_Customers_PUT" doc:id="4ff5e783-13da-4c33-9853-87a399eaf602" >
+		<mongo:update-documents collectionName="Customers" doc:name="Update customer details" doc:id="5425dc50-b6e5-4130-a19a-e2d47a9fcf8f" config-ref="Mumbai_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="get response" doc:id="8e7fef1e-5e71-4740-b61a-2e7361845578" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Show modification status" doc:id="d39641d7-40ac-44dc-9d54-6d89e63e95c1" name="PUT_Response" />
+	</sub-flow>
+	<sub-flow name="Hyderabad_Customers_PUT" doc:id="0c5f4012-dc59-43e6-8791-8349930afb24" >
+		<mongo:update-documents collectionName="Customers" doc:name="Update customer details" doc:id="d055afac-f9da-480e-9e94-85ae8ab4850a" config-ref="Hyderabad_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="get response" doc:id="2d8ae4b2-e301-412c-be60-ab440a5ca19c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Show modification status" doc:id="179edb38-56b2-4ca3-9090-413598d990b5" name="PUT_Response" />
+	</sub-flow>
+	<sub-flow name="PUT_Response" doc:id="528494be-1c15-4aec-a4be-94057f3fed1a" >
+		<choice doc:name="details modified?" doc:id="725d7c27-eea7-4d5d-9e82-f3d59134bd1f" >
+			<when expression="#[payload.'matched'&gt;0 and payload.'modified'&gt;0]">
+				<ee:transform doc:name="success" doc:id="e7cc7722-f7e6-42c4-8f9f-edfc6549bdbb" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message": "Details Successfully Modified in the Local Database"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="success message" doc:id="04401c49-42ff-43e0-8782-a50bfc961ade" message="Customer Details modified"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="failure message" doc:id="e91539aa-7e04-41fe-b4b5-c96abc639d46" message="Customer Details not modified"/>
+				<raise-error doc:name="Raise error" doc:id="27c3b0cd-03d9-4b75-b9e4-08c2eb891d57" type="MONGO:NO_MODIFICATION" description="The data has not been modified either because of emailId mismatch or trying to put already existing data" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

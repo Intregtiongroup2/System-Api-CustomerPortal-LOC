@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="location_router_productsFlow" doc:id="70b73c51-a13b-4014-be2f-3d945a42a0dd" >
+		<logger level="INFO" doc:name="productTitle" doc:id="98a72e70-0c5f-4b24-a257-48e4653ed322" message='#["updating product details of productTitle = " ++ attributes.queryParams.productTitle]' />
+		<set-variable value="#[attributes.queryParams.productTitle]" doc:name="Set Variable" doc:id="ece84ca0-581a-408f-aa8e-e49d04145ba4" variableName="productTitle" />
+		<choice doc:name="location router" doc:id="3a5f925a-c2f1-4690-9af3-b35ad21fa6a6" >
+			<when expression="#[attributes.uriParams.'location' == 'Bangalore']" >
+				<flow-ref doc:name="Bangalore flow" doc:id="bf2edef7-a0b5-4852-9ded-6ec29d29859b" name="Bangalore_Products_Update" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Mumbai']" >
+				<flow-ref doc:name="Mumbai flow" doc:id="88d77bbb-6be2-40b3-be34-f263dcb63862" name="Mumbai_Products_Update" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Hyderabad']" >
+				<flow-ref doc:name="Hyderabad flow" doc:id="2e413c44-bc54-491f-90a7-6084352fb105" name="Hyderabad_Products_Update" />
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Kolkata flow" doc:id="edfc01f3-7d61-4dab-9dd0-4119f9eb52d7" name="Kolkata_Products_Update" />
+			</otherwise>
+		</choice>
+				<logger level="INFO" doc:name="Flow end" doc:id="abb6d53e-7434-4e88-be53-9d097b9a125d" message='#["updating product details of productTitle = " ++ vars.productTitle]' />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5b6a4018-d936-45a2-a32e-d1cbd0ea8a5f" type="MONGO:NO_MODIFICATION" >
+				<ee:transform doc:name="error message" doc:id="c65fcc61-3893-446f-a8f9-33b2b462afc1" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"errorDescription": error.description,
+	"type": error.errorType.identifier
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<sub-flow name="Kolkata_Products_Update" doc:id="177c25d1-f905-4c0d-8612-0ba2eb0dfbf1" >
+		<mongo:update-documents collectionName="Products" doc:name="Update productDetails" doc:id="10200551-96b1-402f-b841-600afc69a81c" config-ref="Kolkata_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="show response" doc:id="72347591-a4f5-48c1-93ce-c0157e6c84ce" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="show productDetails modification status" doc:id="cee68b21-a69b-4cec-b78a-a254cb2d3ff1" name="products_modification_status" />
+	</sub-flow>
+	<sub-flow name="Bangalore_Products_Update" doc:id="24265c8f-05d1-4da0-a8e0-4266edc9d677" >
+		<mongo:update-documents collectionName="Products" doc:name="Update productDetails" doc:id="5ec1abbd-ae0e-4065-aadb-dc442798c41d" config-ref="Bangalore_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="show response" doc:id="1158f4e6-0555-4a89-a18e-3435be5525d8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="show productDetails modification status" doc:id="a79f776e-1695-4955-9ab9-7fd1e430915d" name="products_modification_status" />
+	</sub-flow>
+	<sub-flow name="Mumbai_Products_Update" doc:id="230779e1-d506-4d4b-ac8c-40ba2db0a358">
+		<mongo:update-documents collectionName="Products" doc:name="Update productDetails" doc:id="13ca45ad-95b4-4a6b-b531-ef4e75d9f18c" config-ref="Mumbai_MongoDB_Config">
+			<mongo:query><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="show response" doc:id="211be900-c4c1-4244-a2da-f8e00e01e723">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="show productDetails modification status" doc:id="b04950cd-50ac-4efc-9d11-1ccfd7ad962a" name="products_modification_status" />
+	</sub-flow>
+	<sub-flow name="Hyderabad_Products_Update" doc:id="b7a3478c-fb9a-4042-b2aa-fc4c872ec43f">
+		<mongo:update-documents collectionName="Products" doc:name="Update productDetails" doc:id="b693a962-6352-4cf6-84d0-0a8d8eb7fd69" config-ref="Hyderabad_MongoDB_Config">
+			<mongo:query><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+			<mongo:content-to-update ><![CDATA[#[payload filterObject (value) -> !isEmpty(value)]]]></mongo:content-to-update>
+		</mongo:update-documents>
+		<ee:transform doc:name="show response" doc:id="18091b07-b9b7-45b5-973a-a73b18be46df">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="show productDetails modification status" doc:id="7ed9cf9a-0bdd-49da-a425-8d48d7baa3a8" name="products_modification_status" />
+	</sub-flow>
+	<sub-flow name="products_modification_status" doc:id="8f2d8016-78d0-42dd-83f5-6a08a2046d96">
+		<choice doc:name="productDetails modified?" doc:id="906c6183-874a-4b7f-a888-3a33e4fab5b5">
+			<when expression="#[payload.'matched'&gt;0 and payload.'modified'&gt;0]">
+				<ee:transform doc:name="Success" doc:id="fa0b5d54-f473-4fd3-8ab7-eaae3b39a70b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message": "Details Successfully Modified in the Local Database"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Success" doc:id="27b61fb8-b124-4d7b-a78a-ec49b9aa87c4" message="Details Successfully Modified in the Local Database"/>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Failure" doc:id="369edcb6-ca41-438c-86bd-594ff64cea3f" message="No details modified"/>
+				<raise-error doc:name="Raise error" doc:id="cb07240b-83a6-4805-b664-57ec48eac6ca" type="MONGO:NO_MODIFICATION" description="The data has not been modified either because of productTitle mismatch or trying to put already existing data"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

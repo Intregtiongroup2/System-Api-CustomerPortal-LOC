@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<flow name="GET:products_location" doc:id="aec2813b-2615-4a29-9389-e3083e70f680" >
+		<logger level="INFO" doc:name="productTittle" doc:id="7f7bacad-986f-46ac-be53-77fb45d0c901" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"fetching product details of productTitle = " ++ attributes.queryParams.productTitle]'/>
+		<set-variable value="#[attributes.queryParams.productTitle]" doc:name="Set Variable" doc:id="ebba8fac-5030-4752-ac0f-ac6ca514f407" variableName="productTitle"/>
+		<choice doc:name="location router" doc:id="fc288320-5604-486d-9b52-13d58e109cc2" >
+			<when expression="#[attributes.uriParams.'location' == 'Kolkata']" >
+				<flow-ref doc:name="Kolkata flow" doc:id="72d83024-e0c6-4dd0-b32d-340aca7922e4" name="Kolkata_Products_GET" />
+			</when>
+			<when expression="attributes.uriParams.'location' == 'Bangalore'" >
+				<flow-ref doc:name="Bangalore flow" doc:id="ee49b966-e54a-4dd5-bf1f-7dbb4906e311" name="Bangalore_Products_GET" />
+			</when>
+			<when expression="attributes.uriParams.'location' == 'Mumbai'" >
+				<flow-ref doc:name="Mumbai flow" doc:id="d05a8f8f-57fa-434f-9d2e-5fe813604fc5" name="Mumbai_Products_GET" />
+			</when>
+			<otherwise>
+				<flow-ref doc:name="Hyderabad flow" doc:id="3784d40c-2991-4aed-896f-fae360b4db63" name="Hyderabad_Products_GET" />
+			</otherwise>
+		</choice>
+				<logger level="INFO" doc:name="Response" doc:id="03218d05-06b4-4cb4-94cb-f82ad772200d" message='#["showing product details of productTitle = " ++ payload.productTitle]' />
+		
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="fb86bb65-f7c5-49e0-bfd6-dad9214fc426" type="MONGO:PRODTTL_NOT_FOUND">
+				<ee:transform doc:name="error message" doc:id="80fed394-c8ee-4f0d-aaef-22a6db625b56" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"errorDescription": error.description,
+	"type": error.errorType.identifier
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<sub-flow name="Kolkata_Products_GET" doc:id="0089e47a-f527-497e-8722-37fca93c40c3" >
+		<mongo:find-documents collectionName="Products" fields="productTitle,brandName,seriesName,price,ram,rom,warranty,quantity,location" doc:name="Fetch product details" doc:id="424e9a03-fc3b-49e6-ba4a-4b40406cdc4e" config-ref="Kolkata_MongoDB_Config">
+					<mongo:query><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+				</mongo:find-documents>
+		<flow-ref doc:name="show response" doc:id="ab71a5fc-7037-4371-abb1-bb94749a8e80" name="products_get_response"/>
+	</sub-flow>
+	<sub-flow name="Bangalore_Products_GET" doc:id="5d102dc8-1903-4c93-a129-e9c1a5874184" >
+		<mongo:find-documents collectionName="Products" fields="productTitle,brandName,seriesName,price,ram,rom,warranty,quantity,location" doc:name="Fetch product details" doc:id="11c029ad-3d8c-4b12-b8ea-9a50c7d44a21" config-ref="Bangalore_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<flow-ref doc:name="show response" doc:id="82ff71fc-b692-4784-b16c-77947baf6eb2" name="products_get_response" />
+	</sub-flow>
+	<sub-flow name="Mumbai_Products_GET" doc:id="a54013bb-2f8a-4ad6-b170-26fad557f7db" >
+		<mongo:find-documents collectionName="Products" fields="productTitle,brandName,seriesName,price,ram,rom,warranty,quantity,location" doc:name="Fetch product details" doc:id="d68cf623-0926-47fb-9778-d15e7b547f9c" config-ref="Mumbai_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<flow-ref doc:name="show response" doc:id="e7e6420d-f6b9-44d7-8ccd-cd989adbcb90" name="products_get_response" />
+	</sub-flow>
+	<sub-flow name="Hyderabad_Products_GET" doc:id="8bfb1460-54be-4848-b7ee-ed039eb4f14f" >
+		<mongo:find-documents collectionName="Products" fields="productTitle,brandName,seriesName,price,ram,rom,warranty,quantity,location" doc:name="Fetch product details" doc:id="67fd8d79-9ed6-494b-96cf-ae91bc783447" config-ref="Hyderabad_MongoDB_Config" >
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	"productTitle" : attributes.queryParams.productTitle
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<flow-ref doc:name="show response" doc:id="db9cae4f-5574-4292-b3d6-23e015fbd749" name="products_get_response" />
+	</sub-flow>
+	<sub-flow name="products_get_response" doc:id="7e90cb48-8745-43b0-be99-7d18a7d82a17" >
+		<choice doc:name="any product found?" doc:id="7124e23a-8725-4c69-ba50-220fd1f224b1" >
+			<when expression="#[!isEmpty(payload)]">
+				<ee:transform doc:name="convert response array to JSON" doc:id="fc8220c5-d756-4238-873a-261391070963">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<ee:transform doc:name="Response mapping" doc:id="6f6f2141-1f30-4d49-a90b-5cafdfc09ad7">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	productTitle: payload.productTitle default "",
+	brandName: payload.brandName default "",
+	seriesName: payload.seriesName default "",
+	price: payload.price default 0,
+	ram: payload.ram default "",
+	rom: payload.rom default "",
+	warranty: payload.warranty default "",
+	quantity: payload.quantity default 0,
+	location: payload.location default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Product not found" doc:id="2c818bc7-4d4c-4cf9-8315-ff4a6cdd9ac8" message="productTitle not found in database"/>
+				<raise-error doc:name="Product title not found error" doc:id="cc301295-f4ce-4375-bd5c-76fc778a81a5" type="MONGO:PRODTTL_NOT_FOUND" description="The given product title is not found in the database"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

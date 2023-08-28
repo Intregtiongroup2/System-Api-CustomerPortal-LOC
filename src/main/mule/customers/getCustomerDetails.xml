@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<flow name="GET:customer_location" doc:id="1b36d355-08ab-4fbb-8be3-3fb95346aea1" >
+		<logger level="INFO" doc:name="CustomerId" doc:id="a4c2f122-54d2-4dfd-b450-77178bf1b734" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"fetching details of customerId = " ++ (attributes.queryParams.customerId default "")]'/>
+		<set-variable value="#[attributes.queryParams.customerId]" doc:name="extenalId" doc:id="576de8f7-5043-4694-97ac-54d2ff6faca0" variableName="extenalId"/>
+		<choice doc:name="location router" doc:id="eedf98b2-29a5-469d-87c9-fb5f66add594" >
+			<when expression="#[attributes.uriParams.'location' == 'Kolkata']" >
+				<flow-ref doc:name="fetch details from Kolkata DB" doc:id="6915a0bd-41f5-4e37-bdfa-78b83a377569" name="Kolkata_Customers_GET" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Bangalore']" >
+				<flow-ref doc:name="fetch details from Bangalore DB" doc:id="6100fda1-07a6-4748-a1f5-374fb0244069" name="Bangalore_Customers_GET" />
+			</when>
+			<when expression="#[attributes.uriParams.'location' == 'Mumbai']" >
+				<flow-ref doc:name="fetch details from Mumbai DB" doc:id="bad12478-1f27-4729-8391-cfe8e9bbe858" name="Mumbai_Customers_GET" />
+			</when>
+			<otherwise >
+				<flow-ref doc:name="fetch details from Hyderabad DB" doc:id="43a591b9-4b30-4bf9-8202-f3d74e7adf97" name="Hyderabad_Customers_GET" />
+			</otherwise>
+		</choice>
+	    <logger level="INFO" doc:name="flow ended" doc:id="62ef0833-0398-45c8-a815-0e401dda7c19" message='#[%dw 2.0&#10;output application/json&#10;---&#10;if(isEmpty(vars.extenalId))&#10;  "fetching details for all customers successfully completed"&#10;&#10;else&#10;  "fetching details of customerId = " ++ (payload.customerId default "") ++ "successfully completed"]'/>
+		
+	</flow>
+	<sub-flow name="Kolkata_Customers_GET" doc:id="4d4480fc-479e-48f5-ac9f-0705f048296b" >
+		<choice doc:name="customerId provided?" doc:id="430feba2-7119-4297-b0d2-1b2067715857" >
+			<when expression="#[!isEmpty(attributes.queryParams.'customerId')==true]" >
+				<ee:transform doc:name="store customerId" doc:id="828cefd7-f48b-4203-a616-8e12c62bcc1c" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents using emailId" doc:id="f9944e22-2dab-4a2e-8455-b665df4e257f" config-ref="Kolkata_MongoDB_Config" >
+					<mongo:query ><![CDATA[#[payload]]]></mongo:query>
+				</mongo:find-documents>
+				<flow-ref doc:name="show response" doc:id="e8a0b134-5228-4c10-a998-d0ce7145901c" name="show_data" />
+			</when>
+			<otherwise >
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Fetch all customerDetails" doc:id="d17c8080-9071-4f1c-9e8d-a749a08541dc" config-ref="Kolkata_MongoDB_Config" />
+				<ee:transform doc:name="show response" doc:id="34126461-7c60-4f10-b23f-cdd31e401b8a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(value,index)->{
+    customerId: value.CustomerId,
+    emailId: value.emailId,
+	firstName: value.firstName,
+	lastName: value.lastName,
+	gender: value.gender,
+	pincode: value.pincode,
+	address: value.address,
+	phoneNumber: value.phoneNumber,
+	location: value.location,
+	savedCards: value.cardDetails
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="Bangalore_Customers_GET" doc:id="96863bfe-e429-4cc0-a016-e934e63c4473" >
+		<choice doc:name="customerId provided?" doc:id="193381a0-d343-44dc-a84f-0268070ec654" >
+			<when expression="#[!isEmpty(attributes.queryParams.'customerId')==true]" >
+				<ee:transform doc:name="store customerId" doc:id="b7d43df2-62f2-4674-9dd4-e3fc1102755b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents using emailId" doc:id="b8761cb8-0066-4306-a328-7f3f27d8a833" config-ref="Bangalore_MongoDB_Config" >
+					<mongo:query ><![CDATA[#[payload]]]></mongo:query>
+				</mongo:find-documents>
+				<flow-ref doc:name="Show response" doc:id="09ceee82-49cf-45f3-ba23-04cee8bb1379" name="show_data" />
+			</when>
+			<otherwise >
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Fetch all customerDetails" doc:id="4d34a239-6af2-4302-99be-8a25fe69ef8b" config-ref="Bangalore_MongoDB_Config" />
+				<ee:transform doc:name="Show response" doc:id="e85d9605-4994-4ca7-b0db-1fea5b60caed" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(value,index)->{
+    customerId: value.CustomerId,
+    emailId: value.emailId,
+	firstName: value.firstName,
+	lastName: value.lastName,
+	gender: value.gender,
+	pincode: value.pincode,
+	address: value.address,
+	phoneNumber: value.phoneNumber,
+	location: value.location,
+	savedCards: value.cardDetails
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="Mumbai_Customers_GET" doc:id="34475794-3eff-4b6b-9a0e-70e4eb231194">
+		<choice doc:name="customerId provided?" doc:id="8f3b0a6b-4116-4e2b-af7c-65c94a733830" >
+			<when expression="#[!isEmpty(attributes.queryParams.'customerId')==true]" >
+				<ee:transform doc:name="store customerId" doc:id="cda1ce36-418b-49a5-b3f9-fce7d48a79e9" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents using emailId" doc:id="a97fcbf9-4f70-476f-b0b6-c7614c842913" config-ref="Mumbai_MongoDB_Config" >
+					<mongo:query ><![CDATA[#[payload]]]></mongo:query>
+				</mongo:find-documents>
+				<flow-ref doc:name="Show response" doc:id="4c6cc503-1d12-4bfa-89ed-3d4ab8b3d56a" name="show_data" />
+			</when>
+			<otherwise >
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Fetch all customerDetails" doc:id="ff73f8f4-cd16-4588-a77a-0e45a3644ab1" config-ref="Mumbai_MongoDB_Config" />
+				<ee:transform doc:name="Show response" doc:id="8275cd31-a6ba-4f46-9909-8dd8ea938dff" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(value,index)->{
+    customerId: value.CustomerId,
+    emailId: value.emailId,
+	firstName: value.firstName,
+	lastName: value.lastName,
+	gender: value.gender,
+	pincode: value.pincode,
+	address: value.address,
+	phoneNumber: value.phoneNumber,
+	location: value.location,
+	savedCards: value.cardDetails
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="Hyderabad_Customers_GET" doc:id="b4b67136-3f21-4ae3-a7fe-0673f1446e57">
+		<choice doc:name="customerId provided?" doc:id="b380d24e-01b1-469f-827f-74f431aa83b6" >
+			<when expression="#[!isEmpty(attributes.queryParams.'customerId')==true]" >
+				<ee:transform doc:name="store customerId" doc:id="d2c6c4f4-2340-4629-8f80-944d4b93dfb0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"CustomerId" : attributes.queryParams.customerId
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Find documents using customerId" doc:id="2aa065aa-7577-4423-8f5f-63fe8848fe88" config-ref="Hyderabad_MongoDB_Config" >
+					<mongo:query ><![CDATA[#[payload]]]></mongo:query>
+				</mongo:find-documents>
+				<flow-ref doc:name="Show response" doc:id="09db7ad1-bcff-433d-98d0-eeb63638cdeb" name="show_data"/>
+			</when>
+			<otherwise >
+				<mongo:find-documents collectionName="Customers" fields="emailId,firstName,lastName,gender,pincode,address,phoneNumber,location,cardDetails,CustomerId" doc:name="Fetch all customerDetails" doc:id="81677191-38ec-490a-b6d4-b3dd337fafb8" config-ref="Hyderabad_MongoDB_Config" />
+				<ee:transform doc:name="Show response" doc:id="49cf800b-eae2-48f5-9d7b-8548b81d0a77" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(value,index)->{
+	customerId: value.CustomerId,
+    emailId: value.emailId,
+	firstName: value.firstName,
+	lastName: value.lastName,
+	gender: value.gender,
+	pincode: value.pincode,
+	address: value.address,
+	phoneNumber: value.phoneNumber,
+	location: value.location,
+	savedCards: value.cardDetails
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="show_data" doc:id="dcf9a73b-cfba-4588-ae6e-13fd30bd0ab8" >
+		<choice doc:name="Choice" doc:id="a73ee949-309b-411e-b049-0202e4b32eb3" >
+			<when expression="#[!isEmpty(payload)]" >
+				<ee:transform doc:name="convert response array to JSON" doc:id="eb00a271-e929-458b-bdf4-a5c48a3dec23" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<ee:transform doc:name="response mapping" doc:id="b7108beb-6d90-40c7-a2d2-515f06554964" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	customerId: payload.CustomerId,
+	emailId: payload.emailId,
+	firstName: payload.firstName,
+	lastName: payload.lastName,
+	gender: payload.gender,
+	pincode: payload.pincode,
+	address: payload.address,
+	phoneNumber: payload.phoneNumber,
+	location: payload.location,
+	savedCards: payload.cardDetails
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Customer Id absent in DB" doc:id="ea9cce70-3099-45af-ac74-6a36a033f215" type="MONGO:ID_NOT_FOUND" description="Customer id not found in database" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>
